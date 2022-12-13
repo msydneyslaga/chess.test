@@ -1,0 +1,25 @@
+{
+	"files": [
+		"src/main.ts"
+	],
+	"compilerOptions": {
+		"target": "es2015",
+		"module": "amd",
+		"outFile": "./jsb/script.js",
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+
+		/* type checking */
+		"strict": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"strictFunctionTypes": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"skipLibCheck": true,
+
+		"noEmitOnError": true
+	}
+}

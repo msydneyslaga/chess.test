@@ -1,0 +1,91 @@
+@import "catppuccin.css";
+@import "nf.css";
+@import "hack-nerd-font-mono.css";
+
+:root
+{
+	--cat-accent: var(--cat-blue);
+	--useless-gap: 8px;
+	--border-radius: 4px;
+	font-family: "hackNF", monospace;
+}
+
+html
+{
+	/* height: 100%; */
+}
+
+body
+{
+	margin: 0 auto;
+	background-color: var(--cat-base);
+	min-height: 100%;
+	padding: var(--useless-gap) 0;
+}
+
+::-webkit-input-placeholder {
+	font-style: italic;
+}
+:-moz-placeholder {
+	font-style: italic;  
+}
+::-moz-placeholder {
+	font-style: italic;  
+}
+:-ms-input-placeholder {  
+	font-style: italic; 
+}
+
+.split
+{
+	height: 100%;
+	width: 50%;
+	position: fixed;
+	z-index: 1;
+	top: 0;
+	overflow-x: hidden;
+	padding-top: 20px;
+}
+
+.box
+{
+	text-align: center;
+	margin: 0 auto;
+	color: var(--cat-text);
+	padding: var(--useless-gap);
+	border-radius: var(--border-radius);
+	background-color: var(--cat-crust);
+	font-family: "hackNF", monospace;
+}
+
+.board-bg
+{
+	text-align: center;
+	margin: 0 auto;
+	height: 80vh;
+	aspect-ratio: 1/1;
+	background-color: var(--cat-crust);
+	color: var(--cat-text);
+}
+
+#board
+{
+	width: 100%;
+	aspect-ratio: 1/1;
+}
+
+.tile
+{
+	width: 12%;
+	aspect-ratio: 1/1;
+}
+
+.tile.white
+{
+	background-color: var(--cat-subtext1);
+}
+
+.tile.black
+{
+	background-color: var(--cat-overlay1);
+}
