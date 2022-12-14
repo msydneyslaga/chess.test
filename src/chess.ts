@@ -17,20 +17,47 @@ nf_piece_icons[pieceType.queen] = String.fromCharCode(0xe262);
 nf_piece_icons[pieceType.king] = String.fromCharCode(0xe260);
 Object.freeze(nf_piece_icons);
 
+let prompted_tiles: HTMLElement[] = [];
+
 class Piece
 {
-	readonly type: pieceType;
-	isWhite: boolean;
+	private type: pieceType;
+	private element: HTMLElement;
+	public isWhite: boolean;
 
 	private _xpos: number = -1;
 	private _ypos: number = -1;
 
+	set xpos(n: number)	{ this._xpos = n; }
+	get xpos()			{ return this._xpos; }
+
+	set ypos(n: number)	{ this._ypos = n; }
+	get ypos()			{ return this._ypos; }
+
 	constructor(type: pieceType, isWhite: boolean, x: number, y: number)
 	{
+		const tile = getTile(x, y);
+
 		this.type = type;
 		this.isWhite = isWhite;
 		this.xpos = x;
 		this.ypos = y;
+
+
+		this.element = document.createElement("div");
+		this.element.className = "piece";
+		this.element.innerText = `${this.icon}`;
+		this.element.style.color =
+			this.isWhite ? "var(--cat-blue)" : "var(--cat-maroon)";
+
+		/* unbelievably hack workaround.
+		 *
+		 * have i mentioned my hatred for javascript yet? */
+		const p = this;
+		const test = function() { p.promptMove(); };
+		this.element.onclick = test;
+
+		this.move(tile);
 	}
 
 	get icon(): string
@@ -38,37 +65,84 @@ class Piece
 		return nf_piece_icons[this.type];
 	}
 
-	set xpos(n: number)	{ this._xpos = n; }
-	set ypos(n: number)	{ this._ypos = n; }
-	get xpos()			{ return this._xpos; }
-	get ypos()			{ return this._ypos; }
-
 	move(tile: HTMLElement | null): void
 	{
 		if(!tile)
 			throw `missing tile at ${xy2tileID(this.xpos, this.ypos)}`;
 
-		tile.innerText = `${this.icon}`;
-		tile.style.color = this.isWhite ? "var(--cat-blue)" : "var(--cat-maroon)";
-		tile.onclick = this.promptMove;
-		tile.style.cursor = "pointer";
-	}
-
-	promptMove(): (HTMLElement | null)
-	{
-		this.promptTile();
-		return null;
+		tile.append(this.element);
 	}
 
 	private promptTile(): void
+	{
+	}
+
+	/* return non-zero on out-of-bounds */
+	private promptTileRelative(relx: number, rely: number): number
+	{
+		const tile = getTile(this.xpos + relx, this.ypos + rely);
+
+		if(!tile)
+			return 1;
+
+		prompted_tiles.push(tile);
+
+		return 0;
+	}
+
+	private doPromptMove(): void
+	{
+		// function promptlistener(ev: Event)
+		// {
+		// 	if(ev.target)
+		// 	{
+		// 		document.removeEventListener("click", promptlistener);
+		// 		return;
+		// 	}
+
+		// 	const t = ev.target as HTMLElement;
+		// 	console.log(ev.target);
+		// 	console.log(t.className);
+
+		// 	// if(ev.target.className != "tile prompt")
+		// 	// 	document.removeEventListener("click", promptlistener);
+		// }
+
+		// document.addEventListener("click", promptlistener);
+
+		prompted_tiles.forEach(function(t: HTMLElement)
+		{
+			const prompt = document.createElement("div");
+			prompt.className = "prompt";
+
+			t.append(prompt);
+		});
+	}
+
+	promptMove(): (HTMLElement | null)
 	{
 		switch(this.type)
 		{
 			case pieceType.pawn:
 			{
+				if(this.isWhite)
+				{
+					/* pawn can move one extra space on first row */
+					if(this.ypos == 6)
+						this.promptTileRelative(0, -2);
+					this.promptTileRelative(0, -1);
+				}
+				else
+				{
+					if(this.ypos == 1)
+						this.promptTileRelative(0, 2);
+					this.promptTileRelative(0, 1);
+				}
 				break;
 			}
 		}
+		this.doPromptMove();
+		return null;
 	}
 };
 
@@ -89,36 +163,18 @@ export class Board
 	readonly html: HTMLElement;
 	private pieces: Piece[] = [];
 
-	constructor(width: number = 8, height: number = 8)
+	constructor(width: number = 8, height: number = 8, z: number = 0)
 	{
-		const boardbg = document.createElement("div");
-		const board = document.createElement("table");
+		const board = document.createElement("div");
 		let colour = false;
-
-		boardbg.style.textAlign = "center";
-		boardbg.style.margin = "0 auto";
-		// boardbg.style.height = "100%";
-		boardbg.style.aspectRatio = `${width} / ${height}`;
-		boardbg.style.backgroundColor = "var(--cat-crust)";
-		boardbg.style.color = "var(--cat-base)";
-		boardbg.style.tableLayout = "fixed";
-		boardbg.style.lineHeight = "normal";
-
-		// board.style.width = "${Math.floor(100 / height)}%";
-		board.style.width = "100%";
-		board.style.aspectRatio = `${width} / ${height}`;
-		board.style.borderCollapse = "separate";
-		board.style.borderSpacing = "0px";
+		board.className = "board";
+		board.style.zIndex = `${z}`;
 
 		for(var y = 0; y < height; y++)
 		{
-			const tr = document.createElement("tr");
-			tr.style.height = `${Math.floor(100 / height)}%`
-			// tr.style.width = "100%";
-
 			for(var x = 0; x < width; x++)
 			{
-				const t = document.createElement("td");
+				const t = document.createElement("div");
 
 				/* in what function universe would
 				 * `if(x & 1 == 0)` produce an error?
@@ -129,24 +185,18 @@ export class Board
 				else
 					t.className = "tile white";
 
-				t.id = xy2tileID(x, y);
-				t.style.padding = "0";
+				t.id = xy2tileID(x, y, z);
 
-				tr.append(t);
+				board.append(t);
 
 
-				/* "Type 'boolean' iis not assignable to type 'number'" 🤓
-				* there is no difference there is no difference there is
-				* no difference there is no difference there is no diffe */
+				/* "Type 'boolean' iis not assignable to type 'number'" 🤓 */
 				colour = !colour;
 			}
 			colour = !colour;
-
-			board.append(tr);
 		}
 
-		boardbg.append(board);
-		this.html = boardbg
+		this.html = board;
 	}
 
 	/* now you've got me missing C++
@@ -168,11 +218,10 @@ export class Board
 		}
 	}
 
-	draw(): void
+	forceDraw(): void
 	{
 		this.pieces.forEach(function(p)
 		{
-			console.log(p);
 			if(inBoardBounds(p.xpos, p.ypos))
 			{
 				const tile = getTile(p.xpos, p.ypos);
@@ -181,22 +230,22 @@ export class Board
 			}
 		});
 
-		getTile(5, 4)?.append(new Board(8, 8).html);
+		getTile(5, 4)?.append(new Board(8, 8, 1).html);
 	}
 };
 
-export function xy2tileID(x: number, y: number)
+export function xy2tileID(x: number, y: number, z: number = 0): string
 {
 	const xcoord = "abcdefgh";
-	return `TILE ${xcoord[x]}${y + 1}`;
+	return `TILE ${z}${xcoord[x]}${y + 1}`;
 }
 
-export function getTile(x: number, y: number)
+export function getTile(x: number, y: number, z: number = 0): (HTMLElement | null)
 {
 	return document.getElementById(xy2tileID(x, y));
 }
 
-function inBoardBounds(x: number, y: number)
+function inBoardBounds(x: number, y: number): boolean
 {
 	return (x < 8) && (y < 8);
 }

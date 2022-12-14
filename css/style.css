@@ -58,7 +58,7 @@ body
 	font-family: "hackNF", monospace;
 }
 
-.board-bg
+.boardbg
 {
 	text-align: center;
 	margin: 0 auto;
@@ -68,24 +68,22 @@ body
 	color: var(--cat-base);
 }
 
-#board
+.board
 {
-	width: 100%;
-	aspect-ratio: 1/1;
-}
-
-#board > tr
-{
-	height: 12%;
-	width: 100%;
+	/* width: 100%; */
+	/* aspect-ratio: 1/1; */
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
 }
 
 .tile
 {
 	font: "NerdFontsSymbols Nerd Font";
-	font-size: 5em;
+	font-size: 3em;
+	text-align: center;
 	text-shadow: 0 0 6px #000000;
 	aspect-ratio: 1/1;
+	overflow: visible;
 }
 
 .tile.white
@@ -98,9 +96,26 @@ body
 	background-color: var(--cat-overlay1);
 }
 
-.tile.prompt
+.prompt
 {
-	background-color: var(--cat-peach);
+	background-color: var(--cat-yellow);
+	position: relative;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 1/1;
+	opacity: 0.3;
+	top: 0px;
+}
+
+.piece
+{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 1/1;
+	cursor: pointer;
 }
 
 #board-container

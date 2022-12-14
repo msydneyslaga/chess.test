@@ -34,41 +34,92 @@ define("chess", ["require", "exports"], function (require, exports) {
     nf_piece_icons[4 /* pieceType.queen */] = String.fromCharCode(0xe262);
     nf_piece_icons[5 /* pieceType.king */] = String.fromCharCode(0xe260);
     Object.freeze(nf_piece_icons);
+    let prompted_tiles = [];
     class Piece {
+        set xpos(n) { this._xpos = n; }
+        get xpos() { return this._xpos; }
+        set ypos(n) { this._ypos = n; }
+        get ypos() { return this._ypos; }
         constructor(type, isWhite, x, y) {
             this._xpos = -1;
             this._ypos = -1;
+            const tile = getTile(x, y);
             this.type = type;
             this.isWhite = isWhite;
             this.xpos = x;
             this.ypos = y;
+            this.element = document.createElement("div");
+            this.element.className = "piece";
+            this.element.innerText = `${this.icon}`;
+            this.element.style.color =
+                this.isWhite ? "var(--cat-blue)" : "var(--cat-maroon)";
+            /* unbelievably hack workaround.
+             *
+             * have i mentioned my hatred for javascript yet? */
+            const p = this;
+            const test = function () { p.promptMove(); };
+            this.element.onclick = test;
+            this.move(tile);
         }
         get icon() {
             return nf_piece_icons[this.type];
         }
-        set xpos(n) { this._xpos = n; }
-        set ypos(n) { this._ypos = n; }
-        get xpos() { return this._xpos; }
-        get ypos() { return this._ypos; }
         move(tile) {
             if (!tile)
                 throw `missing tile at ${xy2tileID(this.xpos, this.ypos)}`;
-            tile.innerText = `${this.icon}`;
-            tile.style.color = this.isWhite ? "var(--cat-blue)" : "var(--cat-maroon)";
-            tile.onclick = this.promptMove;
-            tile.style.cursor = "pointer";
-        }
-        promptMove() {
-            this.promptTile();
-            return null;
+            tile.append(this.element);
         }
         promptTile() {
+        }
+        /* return non-zero on out-of-bounds */
+        promptTileRelative(relx, rely) {
+            const tile = getTile(this.xpos + relx, this.ypos + rely);
+            if (!tile)
+                return 1;
+            prompted_tiles.push(tile);
+            return 0;
+        }
+        doPromptMove() {
+            // function promptlistener(ev: Event)
+            // {
+            // 	if(ev.target)
+            // 	{
+            // 		document.removeEventListener("click", promptlistener);
+            // 		return;
+            // 	}
+            // 	const t = ev.target as HTMLElement;
+            // 	console.log(ev.target);
+            // 	console.log(t.className);
+            // 	// if(ev.target.className != "tile prompt")
+            // 	// 	document.removeEventListener("click", promptlistener);
+            // }
+            // document.addEventListener("click", promptlistener);
+            prompted_tiles.forEach(function (t) {
+                const prompt = document.createElement("div");
+                prompt.className = "prompt";
+                t.append(prompt);
+            });
+        }
+        promptMove() {
             switch (this.type) {
                 case 0 /* pieceType.pawn */:
                     {
+                        if (this.isWhite) {
+                            /* pawn can move one extra space on first row */
+                            if (this.ypos == 6)
+                                this.promptTileRelative(0, -2);
+                            this.promptTileRelative(0, -1);
+                        }
+                        else {
+                            if (this.ypos == 1)
+                                this.promptTileRelative(0, 2);
+                            this.promptTileRelative(0, 1);
+                        }
                         break;
                     }
             }
+            this.doPromptMove();
+            return null;
         }
     }
     ;
@@ -83,30 +134,15 @@ define("chess", ["require", "exports"], function (require, exports) {
         [[1 /* pieceType.rook */, true], [2 /* pieceType.knight */, true], [3 /* pieceType.bishop */, true], [4 /* pieceType.queen */, true], [5 /* pieceType.king */, true], [3 /* pieceType.bishop */, true], [2 /* pieceType.knight */, true], [1 /* pieceType.rook */, true],],
     ];
     class Board {
-        constructor(width = 8, height = 8) {
+        constructor(width = 8, height = 8, z = 0) {
             this.pieces = [];
-            const boardbg = document.createElement("div");
-            const board = document.createElement("table");
+            const board = document.createElement("div");
             let colour = false;
-            boardbg.style.textAlign = "center";
-            boardbg.style.margin = "0 auto";
-            // boardbg.style.height = "100%";
-            boardbg.style.aspectRatio = `${width} / ${height}`;
-            boardbg.style.backgroundColor = "var(--cat-crust)";
-            boardbg.style.color = "var(--cat-base)";
-            boardbg.style.tableLayout = "fixed";
-            boardbg.style.lineHeight = "normal";
-            // board.style.width = "${Math.floor(100 / height)}%";
-            board.style.width = "100%";
-            board.style.aspectRatio = `${width} / ${height}`;
-            board.style.borderCollapse = "separate";
-            board.style.borderSpacing = "0px";
+            board.className = "board";
+            board.style.zIndex = `${z}`;
             for (var y = 0; y < height; y++) {
-                const tr = document.createElement("tr");
-                tr.style.height = `${Math.floor(100 / height)}%`;
-                // tr.style.width = "100%";
                 for (var x = 0; x < width; x++) {
-                    const t = document.createElement("td");
+                    const t = document.createElement("div");
                     /* in what function universe would
                      * `if(x & 1 == 0)` produce an error?
                      * why the fuck would `&` take precedence
@@ -115,19 +151,14 @@ define("chess", ["require", "exports"], function (require, exports) {
                         t.className = "tile black";
                     else
                         t.className = "tile white";
-                    t.id = xy2tileID(x, y);
-                    t.style.padding = "0";
-                    tr.append(t);
-                    /* "Type 'boolean' iis not assignable to type 'number'" 🤓
-                    * there is no difference there is no difference there is
-                    * no difference there is no difference there is no diffe */
+                    t.id = xy2tileID(x, y, z);
+                    board.append(t);
+                    /* "Type 'boolean' iis not assignable to type 'number'" 🤓 */
                     colour = !colour;
                 }
                 colour = !colour;
-                board.append(tr);
             }
-            boardbg.append(board);
-            this.html = boardbg;
+            this.html = board;
         }
         /* now you've got me missing C++
          *
@@ -143,26 +174,25 @@ define("chess", ["require", "exports"], function (require, exports) {
                 }
             }
         }
-        draw() {
+        forceDraw() {
             var _a;
             this.pieces.forEach(function (p) {
-                console.log(p);
                 if (inBoardBounds(p.xpos, p.ypos)) {
                     const tile = getTile(p.xpos, p.ypos);
                     p.move(tile);
                 }
             });
-            (_a = getTile(5, 4)) === null || _a === void 0 ? void 0 : _a.append(new Board(8, 8).html);
+            (_a = getTile(5, 4)) === null || _a === void 0 ? void 0 : _a.append(new Board(8, 8, 1).html);
         }
     }
     exports.Board = Board;
     ;
-    function xy2tileID(x, y) {
+    function xy2tileID(x, y, z = 0) {
         const xcoord = "abcdefgh";
-        return `TILE ${xcoord[x]}${y + 1}`;
+        return `TILE ${z}${xcoord[x]}${y + 1}`;
     }
     exports.xy2tileID = xy2tileID;
-    function getTile(x, y) {
+    function getTile(x, y, z = 0) {
         return document.getElementById(xy2tileID(x, y));
     }
     exports.getTile = getTile;
@@ -183,7 +213,7 @@ define("main", ["require", "exports", "chess"], function (require, exports, ches
             throw 'no container';
         container.append(board.html);
         board.initDefaultPieces();
-        board.draw();
+        board.forceDraw();
     }
     main();
 });

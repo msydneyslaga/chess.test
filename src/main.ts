@@ -14,7 +14,7 @@ function main(): void
 
 	container.append(board.html);
 	board.initDefaultPieces();
-	board.draw();
+	board.forceDraw();
 }
 
 main();
