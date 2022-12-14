@@ -65,7 +65,7 @@ body
 	height: 80vh;
 	aspect-ratio: 1/1;
 	background-color: var(--cat-crust);
-	color: var(--cat-text);
+	color: var(--cat-base);
 }
 
 #board
@@ -74,10 +74,17 @@ body
 	aspect-ratio: 1/1;
 }
 
+#board > tr
+{
+	height: 12%;
+	aspect-ratio: 1/1;
+}
+
 .tile
 {
-	width: 12%;
-	aspect-ratio: 1/1;
+	font: "NerdFontsSymbols Nerd Font";
+	font-size: 5em;
+	text-shadow: 0 0 6px #000000;
 }
 
 .tile.white
@@ -88,4 +95,9 @@ body
 .tile.black
 {
 	background-color: var(--cat-overlay1);
+}
+
+.tile.prompt
+{
+	background-color: var(--cat-peach);
 }

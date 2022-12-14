@@ -8,6 +8,7 @@ function main(): void
 
 	const board = chess.createboard();
 	board.initDefaultPieces();
+	board.draw();
 }
 
 main();

@@ -1,4 +1,4 @@
-enum pieceType
+const enum pieceType
 {
 	pawn,
 	rook,
@@ -8,20 +8,62 @@ enum pieceType
 	king,
 };
 
+let nf_piece_icons: string[] = [];
+nf_piece_icons[pieceType.pawn] = String.fromCharCode(0xe261);
+nf_piece_icons[pieceType.rook] = String.fromCharCode(0xe263);
+nf_piece_icons[pieceType.knight] = String.fromCharCode(0xe25f);
+nf_piece_icons[pieceType.bishop] = String.fromCharCode(0xe29c);
+nf_piece_icons[pieceType.queen] = String.fromCharCode(0xe262);
+nf_piece_icons[pieceType.king] = String.fromCharCode(0xe260);
+Object.freeze(nf_piece_icons);
+
 class Piece
 {
 	readonly type: pieceType;
-	colour: pieceType;
+	isWhite: boolean;
 
-	constructor(type: pieceType)
+	readonly xpos: number;
+	readonly ypos: number;
+
+	constructor(type: pieceType, isWhite: boolean)
 	{
 		this.type = type;
+		this.isWhite = isWhite;
+	}
+
+	get icon(): string
+	{
+		return nf_piece_icons[this.type];
+	}
+
+	promptMove(): (HTMLElement | null)
+	{
+		promptTile();
+		return null;
+	}
+
+	private prompTile(): void
+	{
+		switch(this.type)
+		{
+			case pieceType.pawn:
+			{
+				break;
+			}
+		}
 	}
 };
 
-const defaultlayout: (Piece | null)[] =
+const defaultlayout: ([pieceType, boolean] | null)[][] =
 [
-	Piece
+	[[pieceType.rook, false],	[pieceType.knight, false],	[pieceType.bishop, false],	[pieceType.queen, false],	[pieceType.king, false],	[pieceType.bishop, false],	[pieceType.knight, false],	[pieceType.rook, false],],
+	[[pieceType.pawn, false],	[pieceType.pawn, false],		[pieceType.pawn, false],		[pieceType.pawn, false],		[pieceType.pawn, false],	[pieceType.pawn, false],		[pieceType.pawn, false],		[pieceType.pawn, false],],
+	[null,				null,				null,				null,				null,			null,				null,				null,],
+	[null,				null,				null,				null,				null,			null,				null,				null,],
+	[null,				null,				null,				null,				null,			null,				null,				null,],
+	[null,				null,				null,				null,				null,			null,				null,				null,],
+	[[pieceType.pawn, true],	[pieceType.pawn, true],		[pieceType.pawn, true],		[pieceType.pawn, true],		[pieceType.pawn, true],	[pieceType.pawn, true],		[pieceType.pawn, true],		[pieceType.pawn, true],],
+	[[pieceType.rook, true],	[pieceType.knight, true],	[pieceType.bishop, true],	[pieceType.queen, true],	[pieceType.king, true],	[pieceType.bishop, true],	[pieceType.knight, true],	[pieceType.rook, true],],
 ];
 
 class Board
@@ -34,9 +76,10 @@ class Board
 		this.htmlboard = board;
 
 		this.grid = [];
-		for(let y = 0; y < 8; y++)
+		for(let x = 0; x < 8; x++)
 		{
-			for(let x = 0; x < 8; x++)
+			this.grid[x] = [];
+			for(let y = 0; y < 8; y++)
 				this.grid[x][y] = null;
 		}
 
@@ -46,13 +89,47 @@ class Board
 		Object.seal(this.grid);
 	}
 
-	/* at this point i'll take C++ */
+	/* now you've got me missing C++
+	 *
+	 * why cant i neatly implement
+	 * functions outside of the class
+	 * definition?? */
 	initDefaultPieces(): void
 	{
 		for(let y = 0; y < 8; y++)
 		{
 			for(let x = 0; x < 8; x++)
-				this.grid[x][y] = null;
+			{
+				if(defaultlayout[y][x] != null)
+					// @ts-ignore
+					this.grid[x][y] = new Piece(defaultlayout[y][x][0], defaultlayout[y][x][1]);
+				else
+					this.grid[x][y] = null;
+			}
+		}
+	}
+
+	draw(): void
+	{
+		for(let y = 0; y < 8; y++)
+		{
+			for(let x = 0; x < 8; x++)
+			{
+				const id = xy2tileID(x, y);
+				const tile = document.getElementById(id);
+				const p = this.grid[x][y];
+
+				if(!tile)
+					throw `missing tile at ${id}`;
+
+				if(p != null)
+				{
+					tile.innerText = `${p.icon}`;
+					tile.style.color = p.isWhite ? "var(--cat-blue)" : "var(--cat-maroon)";
+				}
+				else
+					tile.innerText = "";
+			}
 		}
 	}
 };
@@ -67,7 +144,6 @@ export function createboard(): Board
 
 	for(var y = 0; y < 8; y++)
 	{
-		const xcoord = "abcdefgh"
 		const tr = document.createElement("tr");
 
 		for(var x = 0; x < 8; x++)
@@ -83,7 +159,7 @@ export function createboard(): Board
 			else
 				t.className = "tile white";
 
-			t.id = `TILE ${y + 1}${xcoord[x]}`;
+			t.id = xy2tileID(x, y);
 
 			tr.append(t);
 
@@ -99,5 +175,11 @@ export function createboard(): Board
 	}
 
 	return new Board(board);
+}
+
+export function xy2tileID(x: number, y: number)
+{
+	const xcoord = "abcdefgh";
+	return `TILE ${xcoord[x]}${y + 1}`;
 }
 
