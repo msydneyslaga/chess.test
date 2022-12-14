@@ -6,7 +6,7 @@ function main(): void
 {
 	console.log("loaded");
 
-	const board = chess.createboard();
+	const board = new chess.Board(8, 8);
 	board.initDefaultPieces();
 	board.draw();
 }
