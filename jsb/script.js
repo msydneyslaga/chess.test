@@ -90,16 +90,21 @@ define("chess", ["require", "exports"], function (require, exports) {
             let colour = false;
             boardbg.style.textAlign = "center";
             boardbg.style.margin = "0 auto";
-            boardbg.style.height = "80vh";
+            // boardbg.style.height = "100%";
             boardbg.style.aspectRatio = `${width} / ${height}`;
             boardbg.style.backgroundColor = "var(--cat-crust)";
             boardbg.style.color = "var(--cat-base)";
+            boardbg.style.tableLayout = "fixed";
+            boardbg.style.lineHeight = "normal";
+            // board.style.width = "${Math.floor(100 / height)}%";
             board.style.width = "100%";
             board.style.aspectRatio = `${width} / ${height}`;
+            board.style.borderCollapse = "separate";
+            board.style.borderSpacing = "0px";
             for (var y = 0; y < height; y++) {
                 const tr = document.createElement("tr");
                 tr.style.height = `${Math.floor(100 / height)}%`;
-                tr.style.width = "100%";
+                // tr.style.width = "100%";
                 for (var x = 0; x < width; x++) {
                     const t = document.createElement("td");
                     /* in what function universe would
@@ -111,6 +116,7 @@ define("chess", ["require", "exports"], function (require, exports) {
                     else
                         t.className = "tile white";
                     t.id = xy2tileID(x, y);
+                    t.style.padding = "0";
                     tr.append(t);
                     /* "Type 'boolean' iis not assignable to type 'number'" 🤓
                     * there is no difference there is no difference there is
@@ -121,8 +127,7 @@ define("chess", ["require", "exports"], function (require, exports) {
                 board.append(tr);
             }
             boardbg.append(board);
-            document.body.append(boardbg);
-            this.htmlboard = boardbg;
+            this.html = boardbg;
         }
         /* now you've got me missing C++
          *
@@ -139,6 +144,7 @@ define("chess", ["require", "exports"], function (require, exports) {
             }
         }
         draw() {
+            var _a;
             this.pieces.forEach(function (p) {
                 console.log(p);
                 if (inBoardBounds(p.xpos, p.ypos)) {
@@ -146,6 +152,7 @@ define("chess", ["require", "exports"], function (require, exports) {
                     p.move(tile);
                 }
             });
+            (_a = getTile(5, 4)) === null || _a === void 0 ? void 0 : _a.append(new Board(8, 8).html);
         }
     }
     exports.Board = Board;
@@ -170,7 +177,11 @@ define("main", ["require", "exports", "chess"], function (require, exports, ches
     chess = __importStar(chess);
     function main() {
         console.log("loaded");
+        const container = document.getElementById("board-container");
         const board = new chess.Board(8, 8);
+        if (!container)
+            throw 'no container';
+        container.append(board.html);
         board.initDefaultPieces();
         board.draw();
     }

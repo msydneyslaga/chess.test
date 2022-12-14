@@ -86,7 +86,7 @@ const defaultlayout: ([pieceType, boolean] | null)[][] =
 
 export class Board
 {
-	private htmlboard: HTMLElement;
+	readonly html: HTMLElement;
 	private pieces: Piece[] = [];
 
 	constructor(width: number = 8, height: number = 8)
@@ -97,19 +97,24 @@ export class Board
 
 		boardbg.style.textAlign = "center";
 		boardbg.style.margin = "0 auto";
-		boardbg.style.height = "80vh";
+		// boardbg.style.height = "100%";
 		boardbg.style.aspectRatio = `${width} / ${height}`;
 		boardbg.style.backgroundColor = "var(--cat-crust)";
 		boardbg.style.color = "var(--cat-base)";
+		boardbg.style.tableLayout = "fixed";
+		boardbg.style.lineHeight = "normal";
 
+		// board.style.width = "${Math.floor(100 / height)}%";
 		board.style.width = "100%";
 		board.style.aspectRatio = `${width} / ${height}`;
+		board.style.borderCollapse = "separate";
+		board.style.borderSpacing = "0px";
 
 		for(var y = 0; y < height; y++)
 		{
 			const tr = document.createElement("tr");
 			tr.style.height = `${Math.floor(100 / height)}%`
-			tr.style.width = "100%";
+			// tr.style.width = "100%";
 
 			for(var x = 0; x < width; x++)
 			{
@@ -125,6 +130,7 @@ export class Board
 					t.className = "tile white";
 
 				t.id = xy2tileID(x, y);
+				t.style.padding = "0";
 
 				tr.append(t);
 
@@ -140,8 +146,7 @@ export class Board
 		}
 
 		boardbg.append(board);
-		document.body.append(boardbg);
-		this.htmlboard = boardbg
+		this.html = boardbg
 	}
 
 	/* now you've got me missing C++
@@ -175,6 +180,8 @@ export class Board
 				p.move(tile);
 			}
 		});
+
+		getTile(5, 4)?.append(new Board(8, 8).html);
 	}
 };
 
@@ -193,3 +200,4 @@ function inBoardBounds(x: number, y: number)
 {
 	return (x < 8) && (y < 8);
 }
+

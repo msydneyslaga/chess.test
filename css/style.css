@@ -20,7 +20,7 @@ body
 	margin: 0 auto;
 	background-color: var(--cat-base);
 	min-height: 100%;
-	padding: var(--useless-gap) 0;
+	/* padding: var(--useless-gap) 0; */
 }
 
 ::-webkit-input-placeholder {
@@ -101,4 +101,11 @@ body
 .tile.prompt
 {
 	background-color: var(--cat-peach);
+}
+
+#board-container
+{
+	height: 80vh;
+	aspect-ratio: 1/1;
+	margin: 0 auto;
 }
