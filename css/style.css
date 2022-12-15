@@ -84,6 +84,15 @@ body
 	text-shadow: 0 0 6px #000000;
 	aspect-ratio: 1/1;
 	overflow: visible;
+
+	display: grid;
+}
+
+.tile > .prompt,
+.tile > .board
+{
+	grid-row-start: 1;
+	grid-column-start: 1;
 }
 
 .tile.white
@@ -96,7 +105,7 @@ body
 	background-color: var(--cat-overlay1);
 }
 
-.prompt
+.tile > .prompt
 {
 	background-color: var(--cat-yellow);
 	position: relative;

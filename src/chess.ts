@@ -115,6 +115,12 @@ class Piece
 			const prompt = document.createElement("div");
 			prompt.className = "prompt";
 
+			/* reminder for future maddy:
+			 * the board is growing because you aren't
+			 * removing the tiles to be prompted from 
+			 * `prompted_tiles`
+			 */
+
 			t.append(prompt);
 		});
 	}
