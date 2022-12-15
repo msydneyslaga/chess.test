@@ -22,16 +22,13 @@ let focused_piece: (Piece | null) = null;
 class Piece
 {
 	private type: pieceType;
-	private element: HTMLElement;
+	readonly element: HTMLElement;
 	public isWhite: boolean;
 
 	private _xpos: number = -1;
 	private _ypos: number = -1;
 
-	set xpos(n: number)	{ this._xpos = n; }
 	get xpos()			{ return this._xpos; }
-
-	set ypos(n: number)	{ this._ypos = n; }
 	get ypos()			{ return this._ypos; }
 
 	constructor(type: pieceType, isWhite: boolean, x: number, y: number)
@@ -40,8 +37,8 @@ class Piece
 
 		this.type = type;
 		this.isWhite = isWhite;
-		this.xpos = x;
-		this.ypos = y;
+		this._xpos = x;
+		this._ypos = y;
 
 
 		this.element = document.createElement("div");
@@ -70,7 +67,14 @@ class Piece
 		if(!tile)
 			throw `missing tile at ${xy2tileID(this.xpos, this.ypos)}`;
 
+		const coords = tile2xy(tile);
 		tile.append(this.element);
+
+		console.log(coords);
+		this._xpos = coords[0];
+		this._ypos = coords[1];
+
+		focused_piece = null;
 	}
 
 	private promptTile(): void
@@ -79,7 +83,7 @@ class Piece
 
 	private promptTileRelative(relx: number, rely: number)
 	{
-		const tile = getTile(this.xpos + relx, this.ypos + rely);
+		const tile = this.getTileRelative(relx, rely);
 
 		if(!tile)
 			return 1;
@@ -90,44 +94,86 @@ class Piece
 		if(!prompt)
 			return 1;
 
-		console.log("h");
 		prompt.classList.add("raise");
-		console.log(prompt);
 
 
 		return 0;
 	}
 
-	promptMove(): (HTMLElement | null)
+	private getTileRelative(relx: number, rely: number)
 	{
-		focused_piece = this;
+		return getTile(this.xpos + relx, this.ypos + rely);
+	}
+
+	pawnMovement(): void
+	{
+		if(this.isWhite)
+		{
+			const diagnw = this.getTileRelative(-1, -1);
+			/* pawn can move one extra space on first row */
+			if(this.ypos == 6)
+				this.promptTileRelative(0, -2);
+
+			/* diagonal take */
+			if(diagnw?.getElementsByClassName("piece")[0])
+				this.promptTileRelative(-1, -1);
+
+			this.promptTileRelative(0, -1);
+		}
+		else
+		{
+			/* pawn can move one extra space on first row */
+			if(this.ypos == 1)
+				this.promptTileRelative(0, 2);
+			this.promptTileRelative(0, 1);
+		}
+	}
+
+	promptMove(): void
+	{
+		if(focused_piece == this)
+		{
+			focused_piece = null;
+			remove_focus();
+			return;
+		}
+		else if(focused_piece != null)
+		{
+			remove_focus();
+			focused_piece = this;
+		}
+		else
+			focused_piece = this;
+
 		switch(this.type)
 		{
 			case pieceType.pawn:
-			{
-				if(this.isWhite)
-				{
-					/* pawn can move one extra space on first row */
-					if(this.ypos == 6)
-						this.promptTileRelative(0, -2);
-					this.promptTileRelative(0, -1);
-				}
-				else
-				{
-					/* pawn can move one extra space on first row */
-					if(this.ypos == 1)
-						this.promptTileRelative(0, 2);
-					this.promptTileRelative(0, 1);
-				}
+				this.pawnMovement();
 				break;
-			}
 		}
-		return null;
 	}
 };
 
-document.addEventListener("click", async function(ev: Event)
+document.addEventListener("click", function(ev: Event)
 {
+	if(!focused_piece)
+		return;
+
+	if(!ev.target)
+		return;
+
+	const e = ev.target as HTMLElement;
+
+	if(e.closest(".prompt.raise"))
+	{
+		const t = e.closest(".tile") as HTMLElement;
+
+		if(!t)
+			throw "missing tile";
+
+		focused_piece.move(t);
+		remove_focus();
+	}
 });
 
 function remove_focus()
@@ -232,15 +278,34 @@ export class Board
 	}
 };
 
-export function xy2tileID(x: number, y: number, z: number = 0): string
+function xy2tileID(x: number, y: number, z: number = 0): string
 {
-	const xcoord = "abcdefgh";
-	return `TILE ${z}${xcoord[x]}${y + 1}`;
+	const xcoord = String.fromCharCode(x + 97);
+	return `TILE ${z}${xcoord}${y + 1}`;
 }
 
-export function getTile(x: number, y: number, z: number = 0): (HTMLElement | null)
+function getTile(x: number, y: number, z: number = 0): (HTMLElement | null)
 {
 	return document.getElementById(xy2tileID(x, y));
+}
+
+function tile2xy(t: HTMLElement): [x: number, y: number, z: number]
+{
+	/* assumes tile ID is of form /TILE [0-9]+[a-z]+[0-9]+/ */
+
+	const coords = t.id.match(/TILE ([0-9]+)([a-z]+)([0-9]+)/)
+
+	if(!coords
+	  || !coords[1]
+	  || !coords[2]
+	  || !coords[3])
+		throw "bad tile ID";
+
+	return [
+		coords[2].charCodeAt(0) - 97,
+		parseInt(coords[3]) - 1,
+		parseInt(coords[1]),
+	];
 }
 
 function inBoardBounds(x: number, y: number): boolean

@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -33,7 +24,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 define("chess", ["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.getTile = exports.xy2tileID = exports.Board = void 0;
+    exports.Board = void 0;
     ;
     let nf_piece_icons = [];
     nf_piece_icons[0 /* pieceType.pawn */] = String.fromCharCode(0xe261);
@@ -45,9 +36,7 @@ define("chess", ["require", "exports"], function (require, exports) {
     Object.freeze(nf_piece_icons);
     let focused_piece = null;
     class Piece {
-        set xpos(n) { this._xpos = n; }
         get xpos() { return this._xpos; }
-        set ypos(n) { this._ypos = n; }
         get ypos() { return this._ypos; }
         constructor(type, isWhite, x, y) {
             this._xpos = -1;
@@ -55,8 +44,8 @@ define("chess", ["require", "exports"], function (require, exports) {
             const tile = getTile(x, y);
             this.type = type;
             this.isWhite = isWhite;
-            this.xpos = x;
-            this.ypos = y;
+            this._xpos = x;
+            this._ypos = y;
             this.element = document.createElement("div");
             this.element.className = "piece";
             this.element.innerText = `${this.icon}`;
@@ -76,50 +65,80 @@ define("chess", ["require", "exports"], function (require, exports) {
         move(tile) {
             if (!tile)
                 throw `missing tile at ${xy2tileID(this.xpos, this.ypos)}`;
+            const coords = tile2xy(tile);
             tile.append(this.element);
+            console.log(coords);
+            this._xpos = coords[0];
+            this._ypos = coords[1];
+            focused_piece = null;
         }
         promptTile() {
         }
         promptTileRelative(relx, rely) {
-            const tile = getTile(this.xpos + relx, this.ypos + rely);
+            const tile = this.getTileRelative(relx, rely);
             if (!tile)
                 return 1;
             const prompt = tile
                 .getElementsByClassName("prompt")[0]; /* ??? */
             if (!prompt)
                 return 1;
-            console.log("h");
             prompt.classList.add("raise");
-            console.log(prompt);
             return 0;
         }
+        getTileRelative(relx, rely) {
+            return getTile(this.xpos + relx, this.ypos + rely);
+        }
+        pawnMovement() {
+            if (this.isWhite) {
+                const diagne = this.getTileRelative(-1, -1);
+                /* pawn can move one extra space on first row */
+                if (this.ypos == 6)
+                    this.promptTileRelative(0, -2);
+                /* diagonal take */
+                if (diagne === null || diagne === void 0 ? void 0 : diagne.getElementsByClassName("piece")[0])
+                    this.promptTileRelative(-1, -1);
+                this.promptTileRelative(0, -1);
+            }
+            else {
+                /* pawn can move one extra space on first row */
+                if (this.ypos == 1)
+                    this.promptTileRelative(0, 2);
+                this.promptTileRelative(0, 1);
+            }
+        }
         promptMove() {
-            focused_piece = this;
+            if (focused_piece == this) {
+                focused_piece = null;
+                remove_focus();
+                return;
+            }
+            else if (focused_piece != null) {
+                remove_focus();
+                focused_piece = this;
+            }
+            else
+                focused_piece = this;
             switch (this.type) {
                 case 0 /* pieceType.pawn */:
-                    {
-                        if (this.isWhite) {
-                            /* pawn can move one extra space on first row */
-                            if (this.ypos == 6)
-                                this.promptTileRelative(0, -2);
-                            this.promptTileRelative(0, -1);
-                        }
-                        else {
-                            /* pawn can move one extra space on first row */
-                            if (this.ypos == 1)
-                                this.promptTileRelative(0, 2);
-                            this.promptTileRelative(0, 1);
-                        }
-                        break;
-                    }
+                    this.pawnMovement();
+                    break;
             }
-            return null;
         }
     }
     ;
     document.addEventListener("click", function (ev) {
-        return __awaiter(this, void 0, void 0, function* () {
-        });
+        if (!focused_piece)
+            return;
+        if (!ev.target)
+            return;
+        const e = ev.target;
+        if (e.closest(".prompt.raise")) {
+            const t = e.closest(".tile");
+            if (!t)
+                throw "missing tile";
+            focused_piece.move(t);
+            remove_focus();
+        }
     });
     function remove_focus() {
         const els = document.getElementsByClassName("prompt");
@@ -196,14 +215,26 @@ define("chess", ["require", "exports"], function (require, exports) {
     exports.Board = Board;
     ;
     function xy2tileID(x, y, z = 0) {
-        const xcoord = "abcdefgh";
-        return `TILE ${z}${xcoord[x]}${y + 1}`;
+        const xcoord = String.fromCharCode(x + 97);
+        return `TILE ${z}${xcoord}${y + 1}`;
     }
-    exports.xy2tileID = xy2tileID;
     function getTile(x, y, z = 0) {
         return document.getElementById(xy2tileID(x, y));
     }
-    exports.getTile = getTile;
+    function tile2xy(t) {
+        /* assumes tile ID is of form /TILE [0-9]+[a-z]+[0-9]+/ */
+        const coords = t.id.match(/TILE ([0-9]+)([a-z]+)([0-9]+)/);
+        if (!coords
+            || !coords[1]
+            || !coords[2]
+            || !coords[3])
+            throw "bad tile ID";
+        return [
+            coords[2].charCodeAt(0) - 97,
+            parseInt(coords[3]) - 1,
+            parseInt(coords[1]),
+        ];
+    }
     function inBoardBounds(x, y) {
         return (x < 8) && (y < 8);
     }
