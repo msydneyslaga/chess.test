@@ -1,3 +1,12 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -34,7 +43,7 @@ define("chess", ["require", "exports"], function (require, exports) {
     nf_piece_icons[4 /* pieceType.queen */] = String.fromCharCode(0xe262);
     nf_piece_icons[5 /* pieceType.king */] = String.fromCharCode(0xe260);
     Object.freeze(nf_piece_icons);
-    let prompted_tiles = [];
+    let focused_piece = null;
     class Piece {
         set xpos(n) { this._xpos = n; }
         get xpos() { return this._xpos; }
@@ -57,8 +66,8 @@ define("chess", ["require", "exports"], function (require, exports) {
              *
              * have i mentioned my hatred for javascript yet? */
             const p = this;
-            const test = function () { p.promptMove(); };
-            this.element.onclick = test;
+            const thisfix = function () { p.promptMove(); };
+            this.element.onclick = thisfix;
             this.move(tile);
         }
         get icon() {
@@ -71,41 +80,21 @@ define("chess", ["require", "exports"], function (require, exports) {
         }
         promptTile() {
         }
-        /* return non-zero on out-of-bounds */
         promptTileRelative(relx, rely) {
             const tile = getTile(this.xpos + relx, this.ypos + rely);
             if (!tile)
                 return 1;
-            prompted_tiles.push(tile);
+            const prompt = tile
+                .getElementsByClassName("prompt")[0]; /* ??? */
+            if (!prompt)
+                return 1;
+            console.log("h");
+            prompt.classList.add("raise");
+            console.log(prompt);
             return 0;
         }
-        doPromptMove() {
-            // function promptlistener(ev: Event)
-            // {
-            // 	if(ev.target)
-            // 	{
-            // 		document.removeEventListener("click", promptlistener);
-            // 		return;
-            // 	}
-            // 	const t = ev.target as HTMLElement;
-            // 	console.log(ev.target);
-            // 	console.log(t.className);
-            // 	// if(ev.target.className != "tile prompt")
-            // 	// 	document.removeEventListener("click", promptlistener);
-            // }
-            // document.addEventListener("click", promptlistener);
-            prompted_tiles.forEach(function (t) {
-                const prompt = document.createElement("div");
-                prompt.className = "prompt";
-                /* reminder for future maddy:
-                 * the board is growing because you aren't
-                 * removing the tiles to be prompted from
-                 * `prompted_tiles`
-                 */
-                t.append(prompt);
-            });
-        }
         promptMove() {
+            focused_piece = this;
             switch (this.type) {
                 case 0 /* pieceType.pawn */:
                     {
@@ -116,6 +105,7 @@ define("chess", ["require", "exports"], function (require, exports) {
                             this.promptTileRelative(0, -1);
                         }
                         else {
+                            /* pawn can move one extra space on first row */
                             if (this.ypos == 1)
                                 this.promptTileRelative(0, 2);
                             this.promptTileRelative(0, 1);
@@ -123,11 +113,21 @@ define("chess", ["require", "exports"], function (require, exports) {
                         break;
                     }
             }
-            this.doPromptMove();
             return null;
         }
     }
     ;
+    document.addEventListener("click", function (ev) {
+        return __awaiter(this, void 0, void 0, function* () {
+        });
+    });
+    function remove_focus() {
+        const els = document.getElementsByClassName("prompt");
+        /* lol */
+        [].forEach.call(els, function (e) {
+            e.classList.remove("raise");
+        });
+    }
     const defaultlayout = [
         [[1 /* pieceType.rook */, false], [2 /* pieceType.knight */, false], [3 /* pieceType.bishop */, false], [4 /* pieceType.queen */, false], [5 /* pieceType.king */, false], [3 /* pieceType.bishop */, false], [2 /* pieceType.knight */, false], [1 /* pieceType.rook */, false],],
         [[0 /* pieceType.pawn */, false], [0 /* pieceType.pawn */, false], [0 /* pieceType.pawn */, false], [0 /* pieceType.pawn */, false], [0 /* pieceType.pawn */, false], [0 /* pieceType.pawn */, false], [0 /* pieceType.pawn */, false], [0 /* pieceType.pawn */, false],],
@@ -148,6 +148,8 @@ define("chess", ["require", "exports"], function (require, exports) {
             for (var y = 0; y < height; y++) {
                 for (var x = 0; x < width; x++) {
                     const t = document.createElement("div");
+                    const prompt = document.createElement("div");
+                    prompt.className = "prompt";
                     /* in what function universe would
                      * `if(x & 1 == 0)` produce an error?
                      * why the fuck would `&` take precedence
@@ -157,6 +159,7 @@ define("chess", ["require", "exports"], function (require, exports) {
                     else
                         t.className = "tile white";
                     t.id = xy2tileID(x, y, z);
+                    t.append(prompt);
                     board.append(t);
                     /* "Type 'boolean' iis not assignable to type 'number'" 🤓 */
                     colour = !colour;

@@ -17,7 +17,7 @@ nf_piece_icons[pieceType.queen] = String.fromCharCode(0xe262);
 nf_piece_icons[pieceType.king] = String.fromCharCode(0xe260);
 Object.freeze(nf_piece_icons);
 
-let prompted_tiles: HTMLElement[] = [];
+let focused_piece: (Piece | null) = null;
 
 class Piece
 {
@@ -54,8 +54,8 @@ class Piece
 		 *
 		 * have i mentioned my hatred for javascript yet? */
 		const p = this;
-		const test = function() { p.promptMove(); };
-		this.element.onclick = test;
+		const thisfix = function() { p.promptMove(); };
+		this.element.onclick = thisfix;
 
 		this.move(tile);
 	}
@@ -77,56 +77,30 @@ class Piece
 	{
 	}
 
-	/* return non-zero on out-of-bounds */
-	private promptTileRelative(relx: number, rely: number): number
+	private promptTileRelative(relx: number, rely: number)
 	{
 		const tile = getTile(this.xpos + relx, this.ypos + rely);
 
 		if(!tile)
 			return 1;
 
-		prompted_tiles.push(tile);
+		const prompt = tile
+			.getElementsByClassName("prompt")[0] as HTMLElement; /* ??? */
+
+		if(!prompt)
+			return 1;
+
+		console.log("h");
+		prompt.classList.add("raise");
+		console.log(prompt);
+
 
 		return 0;
 	}
 
-	private doPromptMove(): void
-	{
-		// function promptlistener(ev: Event)
-		// {
-		// 	if(ev.target)
-		// 	{
-		// 		document.removeEventListener("click", promptlistener);
-		// 		return;
-		// 	}
-
-		// 	const t = ev.target as HTMLElement;
-		// 	console.log(ev.target);
-		// 	console.log(t.className);
-
-		// 	// if(ev.target.className != "tile prompt")
-		// 	// 	document.removeEventListener("click", promptlistener);
-		// }
-
-		// document.addEventListener("click", promptlistener);
-
-		prompted_tiles.forEach(function(t: HTMLElement)
-		{
-			const prompt = document.createElement("div");
-			prompt.className = "prompt";
-
-			/* reminder for future maddy:
-			 * the board is growing because you aren't
-			 * removing the tiles to be prompted from 
-			 * `prompted_tiles`
-			 */
-
-			t.append(prompt);
-		});
-	}
-
 	promptMove(): (HTMLElement | null)
 	{
+		focused_piece = this;
 		switch(this.type)
 		{
 			case pieceType.pawn:
@@ -140,6 +114,7 @@ class Piece
 				}
 				else
 				{
+					/* pawn can move one extra space on first row */
 					if(this.ypos == 1)
 						this.promptTileRelative(0, 2);
 					this.promptTileRelative(0, 1);
@@ -147,10 +122,24 @@ class Piece
 				break;
 			}
 		}
-		this.doPromptMove();
 		return null;
 	}
 };
+
+document.addEventListener("click", async function(ev: Event)
+{
+});
+
+function remove_focus()
+{
+	const els = document.getElementsByClassName("prompt");
+
+	/* lol */
+	[].forEach.call(els, function(e: HTMLElement)
+	{
+		e.classList.remove("raise");
+	});
+}
 
 const defaultlayout: ([pieceType, boolean] | null)[][] =
 [
@@ -181,6 +170,8 @@ export class Board
 			for(var x = 0; x < width; x++)
 			{
 				const t = document.createElement("div");
+				const prompt = document.createElement("div");
+				prompt.className = "prompt";
 
 				/* in what function universe would
 				 * `if(x & 1 == 0)` produce an error?
@@ -193,6 +184,7 @@ export class Board
 
 				t.id = xy2tileID(x, y, z);
 
+				t.append(prompt);
 				board.append(t);
 
 
