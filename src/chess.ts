@@ -67,6 +67,13 @@ class Piece
 		if(!tile)
 			throw `missing tile at ${xy2tileID(this.xpos, this.ypos)}`;
 
+		const pieces = tile.getElementsByClassName("piece");
+
+		[].forEach.call(pieces, function(e: HTMLElement)
+		{
+			e.remove();
+		});
+
 		const coords = tile2xy(tile);
 		tile.append(this.element);
 
@@ -74,11 +81,10 @@ class Piece
 		this._xpos = coords[0];
 		this._ypos = coords[1];
 
-		focused_piece = null;
-	}
+		// @ts-ignore
+		document.getElementById("explode-audio")?.play();
 
-	private promptTile(): void
-	{
+		focused_piece = null;
 	}
 
 	private promptTileRelative(relx: number, rely: number)
@@ -88,6 +94,11 @@ class Piece
 		if(!tile)
 			return 1;
 
+		return this.promptTile(tile);
+	}
+	
+	private promptTile(tile: HTMLElement)
+	{
 		const prompt = tile
 			.getElementsByClassName("prompt")[0] as HTMLElement; /* ??? */
 
@@ -95,7 +106,6 @@ class Piece
 			return 1;
 
 		prompt.classList.add("raise");
-
 
 		return 0;
 	}
@@ -105,11 +115,20 @@ class Piece
 		return getTile(this.xpos + relx, this.ypos + rely);
 	}
 
-	pawnMovement(): void
+	private promptRelativeIfEmpty(relx: number, rely: number)
+	{
+		const tile = this.getTileRelative(relx, rely);
+
+		if(tile && !tile?.getElementsByClassName("piece")[0])
+			this.promptTile(tile);
+	}
+
+	private pawnMovement(): void
 	{
 		if(this.isWhite)
 		{
 			const diagnw = this.getTileRelative(-1, -1);
+			const diagne = this.getTileRelative(1, -1);
 			/* pawn can move one extra space on first row */
 			if(this.ypos == 6)
 				this.promptTileRelative(0, -2);
@@ -118,15 +137,149 @@ class Piece
 			if(diagnw?.getElementsByClassName("piece")[0])
 				this.promptTileRelative(-1, -1);
 
+			/* diagonal take */
+			if(diagne?.getElementsByClassName("piece")[0])
+				this.promptTileRelative(1, -1);
+
 			this.promptTileRelative(0, -1);
 		}
 		else
 		{
+			const diagsw = this.getTileRelative(-1, 1);
+			const diagse = this.getTileRelative(1, 1);
 			/* pawn can move one extra space on first row */
 			if(this.ypos == 1)
 				this.promptTileRelative(0, 2);
+
+			/* diagonal take */
+			if(diagsw?.getElementsByClassName("piece")[0])
+				this.promptTileRelative(-1, 1);
+
+			/* diagonal take */
+			if(diagse?.getElementsByClassName("piece")[0])
+				this.promptTileRelative(1, 1);
+
 			this.promptTileRelative(0, 1);
 		}
+	}
+
+	/* this is the worst code i have ever written lmfaooo */
+	private rookMovement(): void
+	{
+		let y1 = 1;
+		let y2 = 1;
+		let x1 = 1;
+		let x2 = 1;
+		while(y1 < 8)
+		{
+			const tile = this.getTileRelative(0, -y1);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			y1++;
+		}
+		while(y2 < 8)
+		{
+			const tile = this.getTileRelative(0, y2);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			y2++;
+		}
+		while(x1 < 8)
+		{
+			const tile = this.getTileRelative(-x1, 0);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			x1++;
+		}
+		while(x2 < 8)
+		{
+			const tile = this.getTileRelative(x2, 0);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			x2++;
+		}
+	}
+
+	private knightMovement(): void
+	{
+		this.promptTileRelative(1, 2);
+		this.promptTileRelative(-1, 2);
+		this.promptTileRelative(1, -2);
+		this.promptTileRelative(-1, -2);
+		this.promptTileRelative(2, -1);
+		this.promptTileRelative(-2, -1);
+		this.promptTileRelative(2, 1);
+		this.promptTileRelative(-2, 1);
+	}
+
+	private bishopMovement(): void
+	{
+		let ne = 1;
+		let nw = 1;
+		let se = 1;
+		let sw = 1;
+		while(ne < 8)
+		{
+			const tile = this.getTileRelative(-ne, -ne);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			ne++;
+		}
+		while(nw < 8)
+		{
+			const tile = this.getTileRelative(nw, -nw);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			nw++;
+		}
+		while(sw < 8)
+		{
+			const tile = this.getTileRelative(-sw, sw);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			sw++;
+		}
+		while(se < 8)
+		{
+			const tile = this.getTileRelative(se, se);
+			if(tile?.getElementsByClassName("piece")[0])
+				break;
+			if(tile)
+				this.promptTile(tile);
+			se++;
+		}
+	}
+
+	private queenMovement(): void
+	{
+		this.rookMovement();
+		this.bishopMovement();
+	}
+
+	private kingMovement(): void
+	{
+		this.promptRelativeIfEmpty(1, 1);
+		this.promptRelativeIfEmpty(-1, 1);
+		this.promptRelativeIfEmpty(1, -1);
+		this.promptRelativeIfEmpty(-1, -1);
+		this.promptRelativeIfEmpty(0, -1);
+		this.promptRelativeIfEmpty(0, 1);
+		this.promptRelativeIfEmpty(1, 0);
+		this.promptRelativeIfEmpty(-1, 0);
 	}
 
 	promptMove(): void
@@ -149,6 +302,21 @@ class Piece
 		{
 			case pieceType.pawn:
 				this.pawnMovement();
+				break;
+			case pieceType.rook:
+				this.rookMovement();
+				break;
+			case pieceType.knight:
+				this.knightMovement();
+				break;
+			case pieceType.bishop:
+				this.bishopMovement();
+				break;
+			case pieceType.queen:
+				this.queenMovement();
+				break;
+			case pieceType.king:
+				this.kingMovement();
 				break;
 		}
 	}
@@ -260,6 +428,19 @@ export class Board
 					this.pieces.push(new Piece(p[0], p[1], x, y));
 			}
 		}
+	}
+
+	getPieceByCoords(x: number, y: number): (Piece | null)
+	{
+		let r: (Piece | null) = null;
+		this.pieces.forEach(function(p)
+		{
+			if((p.xpos == x) && (p.ypos == y))
+				return r = p;
+			return null;
+		});
+
+		return r;
 	}
 
 	forceDraw(): void
