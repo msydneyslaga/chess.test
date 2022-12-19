@@ -19,12 +19,14 @@ Object.freeze(nf_piece_icons);
 
 let focused_piece: (Piece | null) = null;
 
+/* internal representation of a chess piece */
 class Piece
 {
 	private type: pieceType;
 	readonly element: HTMLElement;
 	public isWhite: boolean;
 
+	/* internal position on board */
 	private _xpos: number = -1;
 	private _ypos: number = -1;
 
@@ -60,6 +62,7 @@ class Piece
 		return nf_piece_icons[this.type];
 	}
 
+	/* move piece to occupy a tile element */
 	move(tile: HTMLElement | null): void
 	{
 		if(!tile)
@@ -85,6 +88,7 @@ class Piece
 		focused_piece = null;
 	}
 
+	/* prompt movement to a tile, relative to current position  */
 	private promptTileRelative(relx: number, rely: number)
 	{
 		const tile = this.getTileRelative(relx, rely);
@@ -95,6 +99,7 @@ class Piece
 		return this.promptTile(tile);
 	}
 	
+	/* prompt movement to a tile by element */
 	private promptTile(tile: HTMLElement)
 	{
 		const prompt = tile
@@ -108,11 +113,13 @@ class Piece
 		return 0;
 	}
 
-	private getTileRelative(relx: number, rely: number)
+	/* get a tile element relative to piece's curret position */
+	private getTileRelative(relx: number, rely: number): HTMLElement
 	{
 		return getTile(this.xpos + relx, this.ypos + rely);
 	}
 
+	/* prompt relative movement only if the tile is unoccupied */
 	private promptRelativeIfEmpty(relx: number, rely: number)
 	{
 		const tile = this.getTileRelative(relx, rely);
@@ -342,6 +349,7 @@ document.addEventListener("click", function(ev: Event)
 	}
 });
 
+/* unfocus all focused tiles */
 function remove_focus()
 {
 	const els = document.getElementsByClassName("prompt");
@@ -353,6 +361,7 @@ function remove_focus()
 	});
 }
 
+/* traditional chess piece layout */
 const defaultlayout: ([pieceType, boolean] | null)[][] =
 [
 	[[pieceType.rook, false],	[pieceType.knight, false],	[pieceType.bishop, false],	[pieceType.queen, false],	[pieceType.king, false],	[pieceType.bishop, false],	[pieceType.knight, false],	[pieceType.rook, false],],
@@ -365,6 +374,7 @@ const defaultlayout: ([pieceType, boolean] | null)[][] =
 	[[pieceType.rook, true],	[pieceType.knight, true],	[pieceType.bishop, true],	[pieceType.queen, true],	[pieceType.king, true],	[pieceType.bishop, true],	[pieceType.knight, true],	[pieceType.rook, true],],
 ];
 
+/* internal representation of a chess board */
 export class Board
 {
 	readonly html: HTMLElement;
@@ -448,17 +458,20 @@ export class Board
 	}
 };
 
+/* converts internal coordinated to traditional chess board coords */
 function xy2tileID(x: number, y: number, z: number = 0): string
 {
 	const xcoord = String.fromCharCode(x + 97);
 	return `TILE ${z}${xcoord}${y + 1}`;
 }
 
+/* get a tile's html element by internal coordinates */
 function getTile(x: number, y: number, z: number = 0): (HTMLElement | null)
 {
 	return document.getElementById(xy2tileID(x, y));
 }
 
+/* get internal coordinates by tile's html element */
 function tile2xy(t: HTMLElement): [x: number, y: number, z: number]
 {
 	/* assumes tile ID is of form /TILE [0-9]+[a-z]+[0-9]+/ */
@@ -478,8 +491,10 @@ function tile2xy(t: HTMLElement): [x: number, y: number, z: number]
 	];
 }
 
+/* return true if the board is in bounds */
 function inBoardBounds(x: number, y: number): boolean
 {
+	/* currently hard-coded lmfao */
 	return (x < 8) && (y < 8);
 }
 
