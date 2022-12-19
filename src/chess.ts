@@ -47,9 +47,7 @@ class Piece
 		this.element.style.color =
 			this.isWhite ? "var(--cat-blue)" : "var(--cat-maroon)";
 
-		/* unbelievably hack workaround.
-		 *
-		 * have i mentioned my hatred for javascript yet? */
+		/* unbelievably hack workaround. */
 		const p = this;
 		const thisfix = function() { p.promptMove(); };
 		this.element.onclick = thisfix;
@@ -387,10 +385,6 @@ export class Board
 				const prompt = document.createElement("div");
 				prompt.className = "prompt";
 
-				/* in what function universe would
-				 * `if(x & 1 == 0)` produce an error?
-				 * why the fuck would `&` take precedence
-				 * over `==` */
 				if(colour)
 					t.className = "tile black";
 				else
@@ -411,11 +405,6 @@ export class Board
 		this.html = board;
 	}
 
-	/* now you've got me missing C++
-	 *
-	 * why cant i neatly implement
-	 * functions outside of the class
-	 * definition?? */
 	initDefaultPieces(): void
 	{
 		for(let y = 0; y < 8; y++)
